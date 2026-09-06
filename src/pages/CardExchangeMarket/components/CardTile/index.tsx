@@ -14,6 +14,6 @@ export default function CardTile({ card, cornerLabel, selected = false, onClick 
     <Image className={styles.cardImage} src={card.image} mode="aspectFill" />
     {cornerLabel ? <Text className={styles.cornerLabel}>{cornerLabel}</Text> : null}
     {selected ? <Text className={styles.selectedMark}>✓</Text> : null}
-    <Text className={styles.cardName}>{card.name}</Text>
+    <Text className={`${styles.cardName} ${card.name === "命运之轮" ? styles.cardNameCompact : ""}`}>{card.name}</Text>
   </View>;
 }

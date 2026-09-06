@@ -12,7 +12,27 @@ const getServerType = (uid) => {
 };
 
 /** 返回已发布资料；服务器仅在查询时由 UID 计算，不写入数据库。 */
-exports.main = async (event) => {
+exports.main = async (event = {}) => {
+  let isAdmin = false;
+  if (event.action === "hide") {
+    try {
+      const { OPENID } = cloud.getWXContext();
+      const caller = OPENID ? await users.where({ _openid: OPENID }).limit(1).get() : { data: [] };
+      isAdmin = caller.data[0]?.isAdmin === true;
+    } catch (_) {
+      // 权限读取失败时隐藏入口关闭，但不影响正常浏览市场。
+      isAdmin = false;
+    }
+  }
+
+  if (event.action === "hide") {
+    if (!isAdmin) return { hidden: false, message: "仅管理员可隐藏资料" };
+    const targetProfileId = typeof event.targetProfileId === "string" ? event.targetProfileId.trim() : "";
+    if (!targetProfileId) return { hidden: false, message: "缺少目标资料 ID" };
+    const result = await users.doc(targetProfileId).update({ data: { isPublished: false } });
+    return { hidden: result.stats.updated > 0, message: result.stats.updated > 0 ? "已隐藏" : "资料不存在或已隐藏" };
+  }
+
   const page = Math.max(0, Number(event.page) || 0);
   const pageSize = Math.min(20, Math.max(1, Number(event.pageSize) || 10));
   const ownedFilterIds = Array.isArray(event.ownedFilterIds) ? event.ownedFilterIds.filter(Boolean) : [];

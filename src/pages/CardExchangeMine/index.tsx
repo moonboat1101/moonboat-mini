@@ -112,7 +112,7 @@ export default function CardExchangeMine() {
     {!loggedIn ? <View className={styles.loginBar}><View><Text className={styles.loginTitle}>登录后可同步资料</Text><Text className={styles.loginHint}>仅使用微信身份进行认证，不获取任何资料</Text></View><Button className={styles.loginButton} onClick={login}>微信登录</Button></View> : <>
       <View className={styles.profilePanel}>
       <View className={styles.field}><Text>UID</Text><Input value={uid} type="number" maxlength={10} className={styles.input} placeholder="请输入 9 或 10 位 UID" onInput={(event) => setUid(event.detail.value)} /></View>
-      <View className={styles.field}><Text>活跃时间</Text><Input value={activeTime} placeholder="例如：晚上 8–12 点" maxlength={24} className={styles.input} onInput={(event) => setActiveTime(event.detail.value)} /></View>
+      <View className={styles.field}><Text>备注</Text><Input value={activeTime} placeholder="活跃时间等其他备注" maxlength={24} className={styles.input} onInput={(event) => setActiveTime(event.detail.value)} /></View>
       <View className={styles.field}><View className={styles.publishCopy}><Text>发布到市场</Text><Text className={styles.switchHint}>关闭后不会在市场展示</Text></View><Switch className={styles.publishSwitch} checked={isPublished} color="#c8853e" onChange={(event) => { setIsPublished(event.detail.value); setUpdatedAt(new Date().toISOString()); }} /></View>
       </View>
       <View className={styles.cardBox}><View className={styles.cardBoxHead}><Text className={styles.sectionTitle}>我多余</Text><Button className={styles.chooseButton} onClick={() => openPicker("owned")}>选择</Button></View>{renderCards(ownedIds, "还没有选择可交换的卡牌")}</View>

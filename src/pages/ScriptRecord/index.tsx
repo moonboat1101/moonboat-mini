@@ -342,7 +342,7 @@ export default function ScriptRecord() {
         >
           <View
             id={MODAL_PANEL_ID}
-            className={styles.modalPanel}
+            className={`${styles.modalPanel} ${modalScrollBodyPx != null ? styles.modalPanelOpening : ""}`}
             onClick={(e) => e.stopPropagation()}
           >
             <View id={MODAL_HEADER_ID} className={styles.modalHeader} catchMove>

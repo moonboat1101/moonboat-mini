@@ -1,5 +1,21 @@
 @import "../../styles/theme.less";
 
+@keyframes modalMaskEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPanelEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .scriptRecord {
   padding: 24px 24px 150px;
   box-sizing: border-box;
@@ -271,6 +287,7 @@
   }
 
   .modalMask {
+    animation: modalMaskEnter 220ms ease-out both;
     position: fixed;
     left: 0;
     top: 0;
@@ -286,6 +303,8 @@
   }
 
   .modalPanel {
+    opacity: 0;
+    transform-origin: center;
     position: relative;
     width: 100%;
     max-width: 720px;
@@ -306,6 +325,10 @@
     grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     box-sizing: border-box;
+  }
+
+  .modalPanelOpening {
+    animation: modalPanelEnter 280ms cubic-bezier(0.2, 0.75, 0.3, 1) both;
   }
 
   .modalHeader {

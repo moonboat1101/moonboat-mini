@@ -42,12 +42,6 @@ export const wishlist: WishlistGame[] = [
     img: "https://kimi-web-img.moonshot.cn/img/picx.zhimg.com/a1f39bddde78d1f1c86ca5e83458be47c93e9bb4.jpg",
   },
   {
-    name: "八十七仙图",
-    desc: "1937年，一场看似普通的画展即将在紫金港的威尔逊展馆举行。《八十七神仙卷》位列展品之首，一时间轰动全港。相传此画卷为唐代吴道子真迹，白描绘画巅峰之作，千百年来颠沛流离，几经辗转终于现世。今天，六名培英中学的学生随老师参加画展，却意外卷入了一场谋划千年的历史迷局之中。",
-    people: 6,
-    img: "https://kimi-web-img.moonshot.cn/img/80larpnew-1251545914.cos.ap-guangzhou.myqcloud.com/308a957e5ead2b69fe634aecc6c8d3e62f37e8bc.jpg",
-  },
-  {
     name: "北宋奇案·汴京",
     desc: "一段北宋时期耻辱的历史，两个南宋同朝为官的叔侄，三位曾经纠葛种种的帝王，竟与那四起未曾结案的密室斩首案深深牵扯。而那尘封于汴京城下的秘密，亦随着它的陨落，或被深埋，或欲出土。以本格密室为面、长逻辑推理为底，四起斩首密室案件环环相扣，在破解诡计之后，一条悖论将引出整段历史中被隐藏的权谋故事。",
     people: 6,
@@ -56,6 +50,16 @@ export const wishlist: WishlistGame[] = [
 ];
 
 export const scriptGames: ScriptGame[] = [
+  {
+    name: "八十七仙图",
+    time: "2026.9",
+    desc: "1937年，一场看似普通的画展即将在紫金港的威尔逊展馆举行。《八十七神仙卷》位列展品之首，一时间轰动全港。相传此画卷为唐代吴道子真迹，白描绘画巅峰之作，千百年来颠沛流离，几经辗转终于现世。今天，六名培英中学的学生随老师参加画展，却意外卷入了一场谋划千年的历史迷局之中。",
+    score: 7,
+    img: "https://kimi-web-img.moonshot.cn/img/80larpnew-1251545914.cos.ap-guangzhou.myqcloud.com/308a957e5ead2b69fe634aecc6c8d3e62f37e8bc.jpg",
+    comment: "328r，13h，屁股都坐烂，慎打！整体质量还可以，推理还原为主，带有少量情感，推理部分也有一些强制引导，做题部分也有比较牢的，不是那种很顺的逻辑推出来的",
+    role: "陆",
+    players: ["WYZ", "TJJ", "CZH", "ZLW", "SZY", "YWL"],
+  },
   {
     name: "山鬼母",
     time: "2026.8",

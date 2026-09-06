@@ -1,5 +1,6 @@
 import Taro from "@tarojs/taro";
 import type { CardExchangeProfile } from "../pages/CardExchangeMarket/profileStore";
+import { saveCardExchangeProfile } from "../pages/CardExchangeMarket/profileStore";
 
 const LOCAL_PROFILE_KEY = "moonboat-card-exchange-profile-v3";
 const LOGIN_CACHE_KEY = "moonboat-card-exchange-authenticated-v1";
@@ -9,6 +10,7 @@ const SUBSCRIPTION_STATUS_CACHE_KEY = "moonboat-card-exchange-subscription-statu
 const SUBSCRIPTION_STATUS_CACHE_TTL_MS = 30 * 60 * 1000;
 
 export type CloudCardExchangeProfile = CardExchangeProfile & {
+  isAdmin?: boolean;
   _id?: string;
   avatarUrl: string;
   createdAt?: number;
@@ -44,6 +46,9 @@ type CachedCardExchangeSubscriptionStatus = {
 };
 
 let initialized = false;
+let profileLoaded = false;
+let sharedProfile: CloudCardExchangeProfile | null = null;
+let profileRequest: Promise<CloudCardExchangeProfile | null> | null = null;
 
 const cloud = () => (globalThis as any).wx?.cloud;
 
@@ -64,7 +69,10 @@ export const getCachedCardExchangeProfile = (): CloudCardExchangeProfile | null 
 };
 
 export const cacheCardExchangeProfile = (profile: CloudCardExchangeProfile) => {
+  sharedProfile = profile;
+  profileLoaded = true;
   Taro.setStorageSync(LOCAL_PROFILE_KEY, profile);
+  saveCardExchangeProfile(profile);
 };
 
 /** 本地只缓存“已验证过微信身份”的状态，不会自动读取云端资料。 */
@@ -93,11 +101,22 @@ const cleanProfile = (profile: CloudCardExchangeProfile) => ({
 
 /** 读取当前登录用户的唯一资料；云数据库会按 _openid 自动隔离私有查询。 */
 export const getMyCardExchangeProfile = async (): Promise<CloudCardExchangeProfile | null> => {
+  if (profileLoaded) return sharedProfile;
+  if (profileRequest) return profileRequest;
   if (!initCardExchangeCloud()) return getCachedCardExchangeProfile();
-  const result = await cloud().callFunction({ name: "cardExchangeUser", data: { action: "get" } });
-  const profile = (result.result?.profile as CloudCardExchangeProfile | undefined) || null;
-  if (profile) cacheCardExchangeProfile(profile);
-  return profile;
+  profileRequest = (async () => {
+    const result = await cloud().callFunction({ name: "cardExchangeUser", data: { action: "get" } });
+    const profile = (result.result?.profile as CloudCardExchangeProfile | undefined) || null;
+    if (profile) cacheCardExchangeProfile(profile);
+    else {
+      sharedProfile = null;
+      profileLoaded = true;
+      Taro.removeStorageSync(LOCAL_PROFILE_KEY);
+    }
+    return profile;
+  })();
+  try { return await profileRequest; }
+  finally { profileRequest = null; }
 };
 
 /** 订阅页状态允许短暂缓存，避免每次切换页签都读取云端资料。 */
@@ -131,7 +150,7 @@ export const invalidateCardExchangeSubscriptionStatusCache = () => {
 };
 
 export const saveMyCardExchangeProfile = async (profile: CloudCardExchangeProfile) => {
-  const next = { ...profile, ...cleanProfile(profile), updatedAt: new Date().toISOString() };
+  const next = { ...profile, ...cleanProfile(profile), isAdmin: getCachedCardExchangeProfile()?.isAdmin === true, updatedAt: new Date().toISOString() };
   if (!initCardExchangeCloud()) {
     cacheCardExchangeProfile(next);
     return next;
@@ -152,6 +171,18 @@ export const getPublishedCardExchangeProfilesPage = async (page = 0, pageSize = 
     profiles: (result.result?.profiles || []) as CloudCardExchangeProfile[],
     hasMore: Boolean(result.result?.hasMore),
   };
+};
+
+export const hideCardExchangeProfile = async (targetProfileId: string) => {
+  if (!initCardExchangeCloud()) throw new Error("当前环境不支持隐藏资料");
+  const result = await cloud().callFunction({
+    name: "cardExchangeMarket",
+    data: { action: "hide", targetProfileId },
+  });
+  if (!result.result?.hidden) throw new Error(result.result?.message || "隐藏失败");
+  const mine = getCachedCardExchangeProfile();
+  if (mine?._id === targetProfileId) cacheCardExchangeProfile({ ...mine, isPublished: false });
+  try { Taro.removeStorageSync(RARITY_RANKING_CACHE_KEY); } catch {}
 };
 
 export const sendCardExchangeNotification = async (targetProfileId: string, requestContent: string) => {

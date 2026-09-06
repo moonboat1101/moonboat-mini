@@ -1,6 +1,6 @@
 import { Button, Picker, Text, View } from "@tarojs/components";
 import Taro, { useReachBottom } from "@tarojs/taro";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePageShare } from "../../hooks/usePageShare";
 import { useTheme } from "../../hooks/useTheme";
 import CardExchangeMine from "../CardExchangeMine";
@@ -10,6 +10,7 @@ import { cardCatalog, getCardById } from "./mockData";
 import { getCardExchangeProfile } from "./profileStore";
 import { CardExchangeServerFilter, CloudCardExchangeProfile, getCardExchangeLoginCache, getCardExchangeSubscriptionStatus, getPublishedCardExchangeProfilesPage, invalidateCardExchangeSubscriptionStatusCache, recordCardExchangeSubscription, sendCardExchangeNotification } from "../../services/cardExchangeCloud";
 import styles from "./index.module.less";
+import { getMyCardExchangeProfile, hideCardExchangeProfile } from "../../services/cardExchangeCloud";
 
 const EXCHANGE_NOTICE_TEMPLATE_ID = "oY82V5jBgWojqtCi07YJF_Hp_ED_6Z6wwUelaz8xKKA";
 const EXCHANGE_SUBSCRIPTION_AT_KEY = "moonboat-card-exchange-subscription-at-v1";
@@ -97,6 +98,16 @@ export default function CardExchangeMarket() {
 }
 
 function MarketPanel() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getMyCardExchangeProfile()
+      .then((profile) => { if (!cancelled) setIsAdmin(profile?.isAdmin === true); })
+      .catch(() => { if (!cancelled) setIsAdmin(false); });
+    return () => { cancelled = true; };
+  }, []);
+  const hiding = useRef(false);
+  const loadVersion = useRef(0);
   const [posts, setPosts] = useState<CloudCardExchangeProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -160,18 +171,47 @@ function MarketPanel() {
     setFilterTarget(target);
   };
   const loadPage = async (page: number, replace = false, ownedFilters = ownedFilterIds, wantedFilters = wantedFilterIds, server = serverFilter) => {
+    const version = ++loadVersion.current;
     if (replace) setLoading(true);
     else setLoadingMore(true);
     try {
       const result = await getPublishedCardExchangeProfilesPage(page, PAGE_SIZE, ownedFilters, wantedFilters, server);
+      if (version !== loadVersion.current) return;
       setPosts((current) => replace ? result.profiles : [...current, ...result.profiles]);
       setNextPage(page + 1);
       setHasMore(result.hasMore);
     } catch {
+      if (version !== loadVersion.current) return;
       Taro.showToast({ title: "市场数据加载失败", icon: "none" });
     } finally {
-      if (replace) setLoading(false);
-      else setLoadingMore(false);
+      if (version === loadVersion.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  };
+
+  const hidePost = async (post: CloudCardExchangeProfile) => {
+    if (!isAdmin || !post._id || hiding.current) return;
+    hiding.current = true;
+    try {
+      const result = await Taro.showModal({
+        title: "确认隐藏",
+        content: `确定隐藏 UID ${post.uid} 的交换资料吗？隐藏后将不再出现在市场中。`,
+        confirmText: "确认隐藏",
+      });
+      if (!result.confirm) return;
+      Taro.showLoading({ title: "正在隐藏", mask: true });
+      await hideCardExchangeProfile(post._id);
+      setPosts((current) => current.filter((item) => item._id !== post._id));
+      // 隐藏会改变服务端分页偏移，从首页重载避免漏掉下一页记录。
+      await loadPage(0, true);
+      Taro.showToast({ title: "已隐藏", icon: "success" });
+    } catch (error) {
+      Taro.showToast({ title: error instanceof Error ? error.message : "隐藏失败，请重试", icon: "none" });
+    } finally {
+      Taro.hideLoading();
+      hiding.current = false;
     }
   };
 
@@ -262,6 +302,7 @@ function MarketPanel() {
             <View className={styles.postFooter}>
               <View className={styles.footerSpacer} />
               <View className={styles.postActions}>
+                {isAdmin && post._id ? <Text className={styles.hidePost} onClick={() => hidePost(post)}>隐藏</Text> : null}
                 <Text className={styles.copyRequest} onClick={() => requestExchange(post)}>发起请求</Text>
                 <Text className={styles.copyUid} onClick={() => copyUid(post)}>复制 UID</Text>
               </View>
